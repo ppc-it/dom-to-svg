@@ -32,7 +32,8 @@
 		"prettier": "prettier --check '**/*.{yml,ts,json}'",
 		"get-fixture": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ts-node src/test/get-fixture.ts",
 		"test": "mocha src/test/test.ts",
-		"semantic-release": "semantic-release"
+		"semantic-release": "semantic-release",
+		"webpack": "webpack --config ./webpack.config.cjs"
 	},
 	"mocha": {
 		"timeout": 150000,
@@ -102,6 +103,9 @@
 		"tagged-template-noop": "^2.1.1",
 		"ts-node": "^9.1.1",
 		"typescript": "^4.3.5",
+		"webpack": "^5.88.2",
+		"webpack-cli": "^5.1.4",
+		"webpack-dev-server": "^4.15.1",
 		"xml-formatter": "^2.4.0"
 	},
 	"dependencies": {

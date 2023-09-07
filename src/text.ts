@@ -26,6 +26,8 @@ export function handleTextNode(textNode: Text, context: TraversalContext): void 
 	// https://css-tricks.com/svg-properties-and-css
 	copyTextStyles(styles, svgTextElement)
 
+    const isLTR = styles.getPropertyValue('writing-mode') === 'vertical-lr';
+
 	const tabSize = parseInt(styles.tabSize, 10)
 
 	// Make sure the y attribute is the bottom of the box, not the baseline
@@ -65,10 +67,14 @@ export function handleTextNode(textNode: Text, context: TraversalContext): void 
 				parentElement.style.userSelect = previousUserSelect
 				selection.removeAllRanges()
 			}
-
-			textSpan.setAttribute('x', lineRectangle.x.toString())
-			textSpan.setAttribute('y', lineRectangle.bottom.toString()) // intentionally bottom because of dominant-baseline setting
-			textSpan.setAttribute('textLength', lineRectangle.width.toString())
+			if (styles.getPropertyValue('transform') === 'matrix(-1, 0, 0, -1, 0, 0)' && isLTR) {
+				textSpan.setAttribute('x', (-1*(lineRectangle.x + lineRectangle.width)).toString())
+				textSpan.setAttribute('y', (-1*(lineRectangle.top + lineRectangle.height)).toString())
+			} else {
+				textSpan.setAttribute('x', lineRectangle.x.toString())
+				textSpan.setAttribute('y', isLTR ? lineRectangle.top.toString() : lineRectangle.bottom.toString())// intentionally bottom because of dominant-baseline setting
+			}
+            textSpan.setAttribute('textLength', isLTR ? lineRectangle.height.toString() : lineRectangle.width.toString())
 			textSpan.setAttribute('lengthAdjust', 'spacingAndGlyphs')
 			svgTextElement.append(textSpan)
 		}

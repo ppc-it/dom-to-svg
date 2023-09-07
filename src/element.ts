@@ -155,7 +155,7 @@ export function handleElement(element: Element, context: Readonly<TraversalConte
 		}
 
 		if (rectanglesIntersect) {
-			addBackgroundAndBorders(styles, bounds, backgroundContainer, window, context)
+			addBackgroundAndBorders(styles, bounds, backgroundContainer, window, context, element.parentElement)
 		}
 
 		// If element is overflow: hidden, create a masking rectangle to hide any overflowing content of any descendants.
@@ -258,7 +258,8 @@ function addBackgroundAndBorders(
 	bounds: DOMRect,
 	backgroundAndBordersContainer: SVGElement,
 	window: Window,
-	context: Pick<TraversalContext, 'getUniqueId' | 'svgDocument'>
+	context: Pick<TraversalContext, 'getUniqueId' | 'svgDocument'>,
+    parentElement: HTMLElement | null
 ): void {
 	if (isVisible(styles)) {
 		if (
@@ -266,7 +267,7 @@ function addBackgroundAndBorders(
 			bounds.height > 0 &&
 			(!isTransparent(styles.backgroundColor) || hasUniformBorder(styles) || styles.backgroundImage !== 'none')
 		) {
-			const box = createBackgroundAndBorderBox(bounds, styles, context)
+			const box = createBackgroundAndBorderBox(bounds, styles, context, parentElement)
 			backgroundAndBordersContainer.append(box)
 			if (styles.backgroundImage !== 'none') {
 				const backgrounds = cssValueParser(styles.backgroundImage)
@@ -378,16 +379,44 @@ function createBox(bounds: DOMRectReadOnly, context: Pick<TraversalContext, 'svg
 	return box
 }
 
+// Alpha blending from https://stackoverflow.com/a/2645218/9271476
+function convertRGBAtoRGB(rgba: string, parent_color: string):string {
+    if (rgba.startsWith('rgba(')) {
+        const rgba_values = rgba.slice(5, -1).split(',')
+		const parent_is_rgba = (parent_color.startsWith('rgba'))
+		const parent_rgb_values = parent_color.slice((parent_is_rgba ? 5 : 4), -1).split(',')
+        const rgb_r = (((1 - parseFloat(rgba_values[3]||'')) * parseFloat(parent_rgb_values[0]||'')) + (parseFloat(rgba_values[3]||'') * parseFloat(rgba_values[0]||''))).toFixed()
+        const rgb_g = (((1 - parseFloat(rgba_values[3]||'')) * parseFloat(parent_rgb_values[1]||'')) + (parseFloat(rgba_values[3]||'') * parseFloat(rgba_values[1]||''))).toFixed()
+        const rgb_b = (((1 - parseFloat(rgba_values[3]||'')) * parseFloat(parent_rgb_values[2]||'')) + (parseFloat(rgba_values[3]||'') * parseFloat(rgba_values[2]||''))).toFixed()
+        return 'rgb(' + rgb_r + ',' + rgb_g + ',' + rgb_b  +')'
+    }
+    return rgba;
+}
+
+function findParentBackgroundColor(parentElement: HTMLElement | null):string {
+	const ignoreColor = 'rgba(0, 0, 0, 0)'
+	let currentParent = parentElement
+	while (currentParent !== null) {
+		const parentStyles = getComputedStyle(currentParent)
+		if (parentStyles.backgroundColor !== ignoreColor) {
+			return parentStyles.backgroundColor
+		}
+		currentParent = currentParent.parentElement
+	}
+	return ignoreColor
+}
+
 function createBackgroundAndBorderBox(
 	bounds: DOMRectReadOnly,
 	styles: CSSStyleDeclaration,
-	context: Pick<TraversalContext, 'svgDocument'>
+	context: Pick<TraversalContext, 'svgDocument'>,
+    parentElement: HTMLElement | null
 ): SVGRectElement {
 	const background = createBox(bounds, context)
 
 	// TODO handle background image and other properties
 	if (styles.backgroundColor) {
-		background.setAttribute('fill', styles.backgroundColor)
+		background.setAttribute('fill', convertRGBAtoRGB(styles.backgroundColor, findParentBackgroundColor(parentElement)))
 	}
 
 	if (hasUniformBorder(styles)) {
