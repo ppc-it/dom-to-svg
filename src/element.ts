@@ -115,6 +115,10 @@ export function handleElement(element: Element, context: Readonly<TraversalConte
 			svgContainer.setAttribute('opacity', styles.opacity)
 		}
 
+		if (styles.transform && styles.transform !== 'none') {		
+			svgContainer.setAttribute('transform', styles.transform)
+		}
+
 		// Accessibility
 		for (const [name, value] of getAccessibilityAttributes(element, context)) {
 			svgContainer.setAttribute(name, value)

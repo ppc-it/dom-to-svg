@@ -12,5 +12,5 @@ module.exports = {
         }
     },
     target: 'browserslist',
-    mode: 'development'
+    mode: 'production'
 }
